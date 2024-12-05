@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath("../suppy"))  # Adjust to your source folder
 project = "suppy"
 copyright = "2024, Tobias Becher"
 author = "Tobias Becher"
-release = "0.0.1"
+release = "0.1.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
