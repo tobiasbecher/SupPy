@@ -112,3 +112,6 @@ Responsible for suppy are:
 <p align="right">
 <img src= https://raw.githubusercontent.com/e0404/matRad/98ba2fb8b07f727a3963cf2572c82a548444580b/matRad/gfx/dkfz_logo_blue.png width="200" />
 </p>
+
+## Miscellaneous
+The authors would like to thank Allex Veldman for making the `suppy` namespace available on PyPi.
