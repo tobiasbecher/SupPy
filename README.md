@@ -1,14 +1,17 @@
-# suppy - Python superiorization library
+# SupPy - Python superiorization library
 
-`suppy` is a native python library for quick setup and evaluation of superiorzation algorithms.
-The superiorization method uses underlying feasibility seeking algorithms, i.e. algorithms that have the goal of finding a point in the intersection of convex sets(
+`SupPy` is a native python library for user-friendly setup and evaluation of superiorzation algorithms.
+
+## General introduction
+The Superiorization Method(SM) uses feasibility-seeking algorithms, i.e., algorithms that aim at finding apoint in the intersection of a finite number of given closed convex sets, i.e.,(
 $
 \text{find } \mathbf{x}\in C = \bigcap_i C_i
-$),
-and perturbs them with respect to an object function. Comparing it to constrained optimization, the goal is not to find an $\mathbf{x}$ that fully minimizes all the objectives, but rather find an $\mathbf{x}$ with reduced objective function.
+$).
 
-For a mathematical introduction to the topic check [this paper](https://pmc.ncbi.nlm.nih.gov/articles/PMC2897099/). Furthermore a library citing general sources can be found [here](https://arxiv.org/pdf/1506.04219).
 
+In the SM the feasibility-seeking algorithm must be "perturbation resilient" in the sense that convergence of the feasibility-seeking iterative process is retained even when such perturbations are inserted into this iterative process. Given is also a real-valued objective function $\phi$. In contrast to constrained optimization of this objective function over the feasible set C, the goal of the SM is not to find a constrained minimum point but rather to reach a feasible point with reduced (not necessarily minimal) objective function value compared with the objective function value of a feasible point that would have been reached by the feasibility-seeking only algorithm.
+
+ Further information and references on the SM can be found in papers listed in the bibliographic collection on the [dedicated Webpage](https://arxiv.org/pdf/1506.04219). For recent works that include introductory material on the SM see, e.g., [[1]](https://link.springer.com/article/10.1007/s11590-022-01961-y), [[2]](https://pubmed.ncbi.nlm.nih.gov/36541524/), [[3]](https://arxiv.org/abs/2212.14724). A recent work on applying the SM to problems in intensity-modulated radiation therapy (IMRT) treatment planning appears [here](https://www.frontiersin.org/journals/oncology/articles/10.3389/fonc.2023.1238824).
 
 ## Installation
 Install simply via pip:
@@ -17,12 +20,12 @@ Install simply via pip:
 pip install suppy
 ```
 
-In general suppy works on the CPU (`numpy`), as well as the GPU(`cupy`). The standard installation will not set up `cupy`.
+In general SupPy works on the CPU (`numpy`), as well as the GPU(`cupy`). The standard installation will not set up `cupy`.
 For installation check your CUDA version and the [cupy installation guide](https://docs.cupy.dev/en/stable/install.html).
 
 ## Usage
 
-`suppy` is a modular library for building and running superiorization models.
+`SupPy` is a modular library for building and running superiorization models.
 it allows for quick setup of feasibility seeking and superiorization algorithms.
 
 Projections for simple structures like halfspaces or circles have dedicated implementations in the `suppy.projections` submodule and allow for visualization of the structure if they are 2D objects.
@@ -103,8 +106,8 @@ sup_model.solve(np.array([3,2]), 1000)
 
 
 ## Funding and Development
-`suppy` was developed as part of the German-Israeli Cooperation in Cancer Research (Project Ca 216)
-Responsible for suppy are:
+`SupPy` was developed as part of the German-Israeli Cooperation in Cancer Research (Project Ca 216)
+Responsible for SupPy are:
 
 - Tobias Becher (DKFZ, Lead Developer & Research Fellow)
 - Prof. Yair Censor (University of Haifa, Principal Investigator / Scientific Lead)
