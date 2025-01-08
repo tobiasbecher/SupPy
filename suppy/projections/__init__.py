@@ -4,7 +4,8 @@ from ._basic_projections import (
     HalfspaceProjection,
     BandProjection,
     BallProjection,
-    DVHProjection,
+    MinDVHProjection,
+    MaxDVHProjection,
 )
 from ._projection_methods import (
     SequentialProjection,
@@ -22,7 +23,8 @@ __all__ = [
     "HalfspaceProjection",
     "BandProjection",
     "BallProjection",
-    "DVHProjection",
+    "MinDVHProjection",
+    "MaxDVHProjection",
     "SequentialProjection",
     "SimultaneousProjection",
     "BlockIterativeProjection",

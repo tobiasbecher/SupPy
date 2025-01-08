@@ -800,9 +800,9 @@ class BallProjection(BasicProjection):
         return np.array([x, y])
 
 
-class DVHProjection(BasicProjection):
+class MaxDVHProjection(BasicProjection):
     """
-    Class for dose-volume histogram projections.
+    Class for max dose-volume histogram projections.
 
     Parameters
     ----------
@@ -835,6 +835,16 @@ class DVHProjection(BasicProjection):
         self.max_percentage = max_percentage
         self.d_max = d_max
 
+        if isinstance(self.idx, slice):
+            self._idx_indices = None
+
+        else:
+            if cp:
+                xp = cp if self._use_gpu else np
+            else:
+                xp = np
+            self._idx_indices = xp.where(self.idx)[0]
+
     def _project(self, x: npt.ArrayLike) -> npt.ArrayLike:
         """
         Projects the input array `x` onto the DVH constraint.
@@ -848,24 +858,161 @@ class DVHProjection(BasicProjection):
         -------
         npt.ArrayLike
             The projected array.
-
-        Notes
-        -----
-        - The method calculates the number of elements that should receive a dose lower than `d_max` based on `max_percentage`.
-        - It then determines how many elements in the input array exceed `d_max`.
-        - If the number of elements exceeding `d_max` is greater than the allowed maximum, it reduces the highest values to `d_max`.
         """
-        # percentage of elements that should receive a dose lower than d_max
-        n = len(x) if isinstance(self.idx, slice) else self.idx.sum()
+        if isinstance(self.idx, slice):
+            return self._project_all(x)
+        else:
+            return self._project_subset(x)
+
+    def _project_all(self, x: npt.ArrayLike) -> npt.ArrayLike:
+        n = len(x)
         am = math.floor(self.max_percentage * n)
 
-        # number of elements in structure with dose greater than d_max
+        l = (x > self.d_max).sum()
+
+        z = l - am
+
+        if z > 0:
+            x[x.argsort()[n - l : n - am]] = self.d_max
+        return x
+
+    def _project_subset(self, x: npt.ArrayLike) -> npt.ArrayLike:
+
+        n = self.idx.sum()
+
+        am = math.floor(self.max_percentage * n)
+
         l = (x[self.idx] > self.d_max).sum()
 
         z = l - am  # number of elements that need to be reduced
 
         if z > 0:
-            x[x[self.idx].argsort()[n - l : n - am]] = self.d_max
+            x[self._idx_indices[x[self.idx].argsort()[n - l : n - am]]] = self.d_max
+
+        return x
+
+    # def _project(self, x: npt.ArrayLike) -> npt.ArrayLike:
+    #     """
+    #     Projects the input array `x` onto the DVH constraint.
+
+    #     Parameters
+    #     ----------
+    #     x : npt.ArrayLike
+    #         The input array to be projected.
+
+    #     Returns
+    #     -------
+    #     npt.ArrayLike
+    #         The projected array.
+
+    #     Notes
+    #     -----
+    #     - The method calculates the number of elements that should receive a dose lower than `d_max` based on `max_percentage`.
+    #     - It then determines how many elements in the input array exceed `d_max`.
+    #     - If the number of elements exceeding `d_max` is greater than the allowed maximum, it reduces the highest values to `d_max`.
+    #     """
+    #     # percentage of elements that should receive a dose lower than d_max
+    #     n = len(x) if isinstance(self.idx, slice) else self.idx.sum()
+    #     am = math.floor(self.max_percentage * n)
+
+    #     # number of elements in structure with dose greater than d_max
+    #     l = (x[self.idx] > self.d_max).sum()
+
+    #     z = l - am  # number of elements that need to be reduced
+
+    #     if z > 0:
+    #         x[x[self.idx].argsort()[n - l : n - am]] = self.d_max
+
+    #     return x
+
+    def _proximity(self, x: npt.ArrayLike) -> float:
+        """
+        Calculate the proximity of the given array to a specified maximum
+        percentage.
+
+        Parameters
+        ----------
+        x : npt.ArrayLike
+            Input array to be evaluated.
+
+        Returns
+        -------
+        float
+            The proximity value as a percentage.
+        """
+        n = len(x) if isinstance(self.idx, slice) else self.idx.sum()
+        return abs((1 / n * (x[self.idx] > self.d_max).sum()) - self.max_percentage) * 100
+
+
+class MinDVHProjection(BasicProjection):
+    """"""
+
+    def __init__(
+        self,
+        d_min: float,
+        min_percentage: float,
+        idx: npt.ArrayLike | None = None,
+        proximity_flag=True,
+        use_gpu=False,
+    ):
+        super().__init__(1, idx, proximity_flag, use_gpu)
+
+        # percentage of elements that need to have at least d_min
+        self.min_percentage = min_percentage
+        self.d_min = d_min
+        if isinstance(self.idx, slice):
+            self._idx_indices = None
+
+        else:
+            if cp:
+                xp = cp if self._use_gpu else np
+            else:
+                xp = np
+            self._idx_indices = xp.where(self.idx)[0]
+
+    def _project(self, x: npt.ArrayLike) -> npt.ArrayLike:
+        """
+        Projects the input array `x` onto the DVH constraint.
+
+        Parameters
+        ----------
+        x : npt.ArrayLike
+            The input array to be projected.
+
+        Returns
+        -------
+        npt.ArrayLike
+            The projected array.
+        """
+        if isinstance(self.idx, slice):
+            return self._project_all(x)
+        else:
+            return self._project_subset(x)
+
+    def _project_all(self, x: npt.ArrayLike) -> npt.ArrayLike:
+        n = len(x)
+        am = math.ceil(self.min_percentage * n)
+
+        l = (x > self.d_min).sum()
+
+        z = am - l
+
+        if z > 0:
+            x[x.argsort()[n - am : n - l]] = self.d_min
+        return x
+
+    def _project_subset(self, x: npt.ArrayLike) -> npt.ArrayLike:
+
+        n = self.idx.sum()
+
+        am = math.ceil(self.min_percentage * n)
+
+        l = (x[self.idx] > self.d_min).sum()
+
+        z = am - l
+
+        if z > 0:
+            x[self._idx_indices[x[self.idx].argsort()[n - am : n - l]]] = self.d_min
 
         return x
 
@@ -885,7 +1032,7 @@ class DVHProjection(BasicProjection):
             The proximity value as a percentage.
         """
         n = len(x) if isinstance(self.idx, slice) else self.idx.sum()
-        return abs((1 / n * (x[self.idx] > self.d_max).sum()) - self.max_percentage) * 100
+        return abs((1 / n * (x[self.idx] < self.d_min).sum()) - self.min_percentage) * 100
 
     # def _project_argpartition(self, x: npt.ArrayLike) -> npt.ArrayLike:
     # print(WARNING: This function is not working properly!)
