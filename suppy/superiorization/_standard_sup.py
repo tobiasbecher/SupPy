@@ -75,6 +75,7 @@ class Superiorization(FeasibilityPerturbation):
 
         self.all_x = []
         self.all_function_values = []  # array storing all objective function values
+        self.all_proximity_values = []  # array storing all proximity function values
 
         self.all_x_function_reduction = (
             []
@@ -82,11 +83,17 @@ class Superiorization(FeasibilityPerturbation):
         self.all_function_values_function_reduction = (
             []
         )  # array storing all objective function values achieved via the function reduction step
+        self.all_proximity_values_function_reduction = (
+            []
+        )  # array storing all proximity function values achieved via the function reduction step
 
         self.all_x_basic = []  # array storing all points achieved via the basic algorithm
         self.all_function_values_basic = (
             []
         )  # array storing all objective function values achieved via the basic algorithm
+        self.all_proximity_values_basic = (
+            []
+        )  # array storing all proximity function values achieved via the basic algorithm
 
     @ensure_float_array
     def solve(self, x_0: npt.ArrayLike, max_iter: int = 10, storage=False) -> npt.ArrayLike:
@@ -118,7 +125,7 @@ class Superiorization(FeasibilityPerturbation):
         self.p_k = self.basic.proximity(x_0)
 
         if storage:
-            self._initial_storage(x_0, self.perturbation_scheme.func(x_0))
+            self._initial_storage(x_0, self.f_k, self.p_k)
 
         while self._k < max_iter and not stop:
             self.perturbation_scheme.pre_step()
@@ -128,20 +135,22 @@ class Superiorization(FeasibilityPerturbation):
             x = self.perturbation_scheme.perturbation_step(x)
 
             if storage:
-                self._storage_function_reduction(x, self.perturbation_scheme.func(x))
+                self._storage_function_reduction(
+                    x, self.perturbation_scheme.func(x), self.basic.proximity(x)
+                )
             if self._k % 10 == 0:
                 print(f"Current iteration: {self._k}")
             # perform basic step
             x = self.basic.step(x)
 
-            if storage:
-                self._storage_basic_step(x, self.perturbation_scheme.func(x))
-
-            self._k += 1
-
             # check current function and proximity values
             f_temp = self.perturbation_scheme.func(x)
             p_temp = self.basic.proximity(x)
+
+            if storage:
+                self._storage_basic_step(x, f_temp, self.basic.proximity(x))
+
+            self._k += 1
 
             # enable different stopping criteria for different superiorization algorithms
             stop = self._stopping_criteria(f_temp, p_temp)
@@ -201,7 +210,7 @@ class Superiorization(FeasibilityPerturbation):
         """
         pass
 
-    def _initial_storage(self, x, f):
+    def _initial_storage(self, x, f, p):
         """
         Initializes storage for objective values and appends initial values.
 
@@ -211,22 +220,28 @@ class Superiorization(FeasibilityPerturbation):
             Initial values of the variables.
         f : array-like
             Initial values of the objective function.
+        p : array-like
+            Proximity function value
         """
         # reset objective values
         self.all_x = []
         self.all_function_values = []  # array storing all objective function values
+        self.all_proximity_values = []  # array storing all proximity function values
 
         self.all_x_function_reduction = []
         self.all_function_values_function_reduction = []
+        self.all_proximity_values_function_reduction = []
 
         self.all_x_basic = []
         self.all_function_values_basic = []
+        self.all_proximity_values_basic = []
 
         # append initial values
         self.all_x.append(x)
         self.all_function_values.append(f)
+        self.all_proximity_values.append(p)
 
-    def _storage_function_reduction(self, x, f):
+    def _storage_function_reduction(self, x, f, p):
         """
         Stores the given values of x and f into the corresponding lists.
 
@@ -236,6 +251,8 @@ class Superiorization(FeasibilityPerturbation):
             The current value of the variable x to be stored.
         f : float
             The current value of the function f to be stored.
+        p : float
+            The current value of the proximity function p to be stored.
 
         Notes
         -----
@@ -247,8 +264,10 @@ class Superiorization(FeasibilityPerturbation):
         self.all_function_values.append(f)
         self.all_x_function_reduction.append(x.copy())
         self.all_function_values_function_reduction.append(f)
+        self.all_proximity_values_function_reduction.append(p)
+        self.all_proximity_values.append(p)
 
-    def _storage_basic_step(self, x, f):
+    def _storage_basic_step(self, x, f, p):
         """
         Stores the current values of x and f in the respective lists.
 
@@ -258,6 +277,8 @@ class Superiorization(FeasibilityPerturbation):
             The current value of the variable x.
         f : float
             The current value of the function f.
+        p : float
+            The current value of the proximity function p.
 
         Notes
         -----
@@ -268,6 +289,8 @@ class Superiorization(FeasibilityPerturbation):
         self.all_function_values_basic.append(f)
         self.all_x.append(x.copy())
         self.all_function_values.append(f)
+        self.all_proximity_values_basic.append(p)
+        self.all_proximity_values.append(p)
 
     def _post_step(self, x: npt.ArrayLike):
         """
@@ -291,3 +314,8 @@ class Superiorization(FeasibilityPerturbation):
         )
         self.all_x_basic = xp.array(self.all_x_basic)
         self.all_function_values_basic = xp.array(self.all_function_values_basic)
+        self.all_proximity_values = xp.array(self.all_proximity_values)
+        self.all_proximity_values_function_reduction = xp.array(
+            self.all_proximity_values_function_reduction
+        )
+        self.all_proximity_values_basic = xp.array(self.all_proximity_values_basic)
